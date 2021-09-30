@@ -3,15 +3,15 @@ Given a time vector and a vector/matrix/data.frame of values, it computes the ti
 
 In a few words, ***tAgg*** ...
  * ... is relatively fast (it uses the `dplyr `and `RcppRoll` packages as well as a custom `approx` function to optimize execution time).
- * ... handles vectors, matrices or data.frame.
- * ... handles missing values following three different approach (including simply propagating them to the output)
+ * ... handles vectors, matrices or data.frames.
+ * ... handles missing values following three different approaches (including simply propagating them to the output)
  
 
 # Getting started
 
 ## installation
 
-You can install the package from github using the `remotes` R package: 
+You can install the package ***tAgg*** from github using the `remotes` R package: 
 ```r
 remotes::install_github("IvanHeriver/tAgg")
 ```
