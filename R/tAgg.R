@@ -29,7 +29,7 @@
 #' \code{as.POSIXct(time, tz="UTC")}.
 #' 
 #' The dimensions of \code{time} and \code{x} must be consistent. If argument
-#' \code {time} is of length \code{n}, argument \code{x} can be one of the
+#' \code{time} is of length \code{n}, argument \code{x} can be one of the
 #' following: (1) a vector of length \code{n} or (2) a matrix or data.frame with
 #' \code{n} rows.
 #' 
@@ -37,7 +37,9 @@
 #' @param x A vector, matrix or data.frame with dimensions consistent with
 #' argument \code{time} containing the values to be aggregated.
 #' @param by Character string specifying the target time interval of the
-#' aggregation.
+#' aggregation. Its default value is "days" but it can be one of the following time
+#' interval : "secs", "mins", "hours", "days", "weeks", "months", "years". Partial
+#' matching is supported.
 #' @param keep_sum Logical (default is \code{FALSE}). If \code{TRUE}, the time
 #' aggregated values are not divided by the duration of the target time steps.
 #' @param na.action Character string specifying how missing values are to be handled.
@@ -59,6 +61,8 @@
 #' if \code{x} is a vector or \code{m} additional columns if \code{x} was matrix or
 #' data.frame with \code{m} columns.
 #' @importFrom magrittr "%>%"
+#' @author Ivan Horner
+#' @name tAgg
 #' @export
 tAgg <- function(
 time,
