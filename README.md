@@ -1,6 +1,12 @@
 The ***tAgg*** package contains a single function `tAgg()` to perform time aggregation.
 Given a time vector and a vector/matrix/data.frame of values, it computes the time aggregated values at a given target time interval (e.g. "days", "month", "years", etc.).
 
+In a few words, ***tAgg*** ...
+ * ... is relatively fast (it uses the `dplyr `and `RcppRoll` packages as well as a custom `approx` function to optimize execution time).
+ * ... handles vectors, matrices or data.frame.
+ * ... handles missing values following three different approach (including simply propagating them to the output)
+ 
+
 # Getting started
 
 ## installation
@@ -35,10 +41,9 @@ test_data <- data.frame(
         "2010-01-05 02:33"), format="%Y-%m-%d %H:%M", tz="UTC"),
     data=c(2, 4, 3, NA, 5, 10, 0, 3, 6, 4)
 )
-plot(test_data, type="b", lwd=2)
 ```
 
-Let's aggregate thsi data.frame at hourly and daily time intervals:
+Let's aggregate this data.frame at hourly and daily time intervals:
 
 ```r
 # hourly aggregation
@@ -57,12 +62,31 @@ daily_agg_data <- tAgg(
     test_data$data,
     by="days"
 )
-print(daily_agg_data)
+daily_agg_data
 ```
 
 And now, let's have a look at the result:
 
 ```r
-lines(hourly_agg_data, col="blue", lwd=2, type="s")
-lines(daily_agg_data, col="red", lwd=2, type="s")
+# source data
+plot(test_data, type="b", lwd=2)
+
+# hourly data
+time_interval <- hourly_agg_data[2, 1] -  hourly_agg_data[1, 1]
+points(hourly_agg_data, col="blue", pch=16)
+segments(
+    hourly_agg_data[, 1], hourly_agg_data[, 2], 
+    hourly_agg_data[, 1] + time_interval, hourly_agg_data[, 2], 
+    col="blue", lwd=2
+)
+
+# daily data
+time_interval <- daily_agg_data[2, 1] -  daily_agg_data[1, 1]
+points(daily_agg_data, col="red", pch=16)
+segments(
+    daily_agg_data[, 1], daily_agg_data[, 2], 
+    daily_agg_data[, 1] + time_interval, daily_agg_data[, 2], 
+    col="red", lwd=2
+)
+
 ```
