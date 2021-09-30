@@ -143,15 +143,24 @@ verbose = FALSE
   # x <- apply(x, 2, as.double) # very slow if x is large!
   # time_num <- as.double(time_num)
   # time_target_num <- as.double(time_target_num)
-  
+
+  if (identical(na.action, "ignore")) {
+    if (verbose) { message("Interpolating missing values..."); flush.console() }
+    for (k in 1:ncol(x)) {
+      is_na <- is.na(x[, k])
+      x[is_na, k] <- my_approx(x = time_num[!is_na],
+        y = x[!is_na, k, drop=FALSE],
+        xout = time_num[is_na], method = "linear")
+    }
+  } 
+
   if (verbose) { message("Interpolating data..."); flush.console() }
   # -------------------------------------------------------------------
   # interpolate data at target time steps 
   interpolated_data <- my_approx(x = time_num, y = x, xout = time_target_num, method = method)          # faster if x has many column
   # interpolated_data <- apply(x, 2, function(e) approx(x = time_num, y = e, xout = time_target_num)$y) # faster if x has only few columns (but does not have the constant option)
-  
   V0 <- rbind(x, interpolated_data)[o, , drop = FALSE] # combine source data and interpolated data
-  
+
   # -------------------------------------------------------------------
   # compute the area below curve of each source time step before summing them
   # at the scale of the target time steps
@@ -159,16 +168,13 @@ verbose = FALSE
   if (identical(method, "linear")) V1 <- apply(V0, 2, function(e) RcppRoll::roll_sum(e, 2L) / 2 * d_time_new)                 # trapezoidale rule 
   else if (identical(method, "constant")) V1 <- apply(V0[-nrow(V0), , drop = FALSE], 2, function(e) e * d_time_new) # constant rule
   
-  if (verbose) { message("Managing missing values..."); flush.console() }
-  # missing value management: ignore (NA values are removed) or threshold (only time steps with more than na.th missing values are kept as missing)
-  if (identical(na.action, "ignore")) {
-    V1[is.na(V1)] <- 0 # missing values are set to 0
-  } else if (identical(na.action, "threshold")) {
-    isnaV1 <- is.na(V1)
-    V1[isnaV1 * Z2$prop_t <= na.th & isnaV1] <- 0 # missing values are set to 0 except when threshold is exceeded
+  if (identical(na.action, "threshold")) {
+    if (verbose) { message("Interpolating missing values..."); flush.console() }
+    is_na <- is.na(V1)
+    V1[is_na * Z2$prop_t <= na.th & is_na] <- 0 # missing values are set to 0 except when threshold is exceeded
   }
   
-  if (verbose) { message("Computing area below curve of target time steps..."); flush.console() }
+  if (verbose) { message("Computing below-curve area of target time steps..."); flush.console() }
   # compute volumes of target time steps
   V2 <- data.frame(f = time_indices, V1)  %>% dplyr::group_by(f) %>% dplyr::summarize_all(sum) %>% dplyr::select(-f) %>% data.frame() 
   # convert source below-curve area to target values by deviding by the target time step duration
@@ -181,29 +187,29 @@ verbose = FALSE
 }
 
 
-  # -------------------------------------------------------------------
-  # compared to approx(): slower if x is a vector, much faster if x is a matrix/data.frame
-  # they give slighly different results that I wasn't able to correct but it is likely only
-  # related to decimal/precision issues
-  # In addition, this function can be customized to implement other interpolation approaches
-  # (see argument "method" and the 'constant' option option for example)
-  my_approx <- function(x, y, xout, method) {
+# -------------------------------------------------------------------
+# compared to approx(): slower if x is a vector, much faster if x is a matrix/data.frame
+# they give slighly different results that I wasn't able to correct but it is likely only
+# related to decimal/precision issues
+# In addition, this function can be customized to implement other interpolation approaches
+# (see argument "method" and the 'constant' option option for example)
+my_approx <- function(x, y, xout, method="linear") {
+  
+  i <- findInterval(xout, x)
+  i[i==0 | i >= length(x)] <- NA
+  
+  if (identical(method, "linear")) {
+    x1 <- x[i]
+    x2 <- x[i + 1]
     
-    i <- findInterval(xout, x)
-    i[i==0 | i >= length(x)] <- NA
+    y1 <- y[i, , drop = FALSE]
+    y2 <- y[i + 1, , drop = FALSE]
     
-    if (identical(method, "linear")) {
-      x1 <- x[i]
-      x2 <- x[i + 1]
-      
-      y1 <- y[i, , drop = FALSE]
-      y2 <- y[i + 1, , drop = FALSE]
-      
-      A <- (y1 - y2) / (x1 - x2)
-      B <- y1 - A * x1
-      
-      A * xout + B
-    } else if (identical(method, "constant")) {
-      y[i, , drop = FALSE]
-    }
-  } 
+    A <- (y1 - y2) / (x1 - x2)
+    B <- y1 - A * x1
+    
+    A * xout + B
+  } else if (identical(method, "constant")) {
+    y[i, , drop = FALSE]
+  }
+} 
